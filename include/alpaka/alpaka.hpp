@@ -142,6 +142,7 @@
 #include <alpaka/meta/ApplyTuple.hpp>
 #include <alpaka/meta/CartesianProduct.hpp>
 #include <alpaka/meta/Concatenate.hpp>
+#include <alpaka/meta/CudaVectorArrayWrapper.hpp>
 #include <alpaka/meta/DependentFalseType.hpp>
 #include <alpaka/meta/Filter.hpp>
 #include <alpaka/meta/Fold.hpp>
@@ -150,6 +151,7 @@
 #include <alpaka/meta/IntegerSequence.hpp>
 #include <alpaka/meta/Integral.hpp>
 #include <alpaka/meta/IsStrictBase.hpp>
+#include <alpaka/meta/IsArrayOrVector.hpp>
 #include <alpaka/meta/Metafunctions.hpp>
 #include <alpaka/meta/NdLoop.hpp>
 #include <alpaka/meta/Set.hpp>
@@ -189,3 +191,4 @@
 // vec
 #include <alpaka/vec/Traits.hpp>
 #include <alpaka/vec/Vec.hpp>
+
