@@ -33,14 +33,12 @@ ALPAKA_FN_INLINE ALPAKA_FN_HOST_ACC bool equals(T1 a, T2 b)
     return a == static_cast<T1>(b);
 }
 
-template<>
-ALPAKA_FN_INLINE ALPAKA_FN_HOST_ACC bool equals<float, float>(float a, float b)
+ALPAKA_FN_INLINE ALPAKA_FN_HOST_ACC bool equals(float a, float b)
 {
     return alpaka::math::floatEqualExactNoWarning(a, b);
 }
 
-template<>
-ALPAKA_FN_INLINE ALPAKA_FN_HOST_ACC bool equals<double, double>(double a, double b)
+ALPAKA_FN_INLINE ALPAKA_FN_HOST_ACC bool equals(double a, double b)
 {
     return alpaka::math::floatEqualExactNoWarning(a, b);
 }
