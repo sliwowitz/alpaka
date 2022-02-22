@@ -29,18 +29,13 @@ namespace alpaka::rand
      *
      * @param a first 64-bit multiplier
      * @param b second 64-bit multiplier
-     * @param resultHigh high 32 bits of the product a*b
-     * @param resultLow low 32 bits of the product a*b
+     * @return a pair of 32 numbers { resultHigh, resultLow } with the high and low 32 bits of the product a*b
      */
     // TODO: See single-instruction implementations in original Philox source code
-    ALPAKA_FN_HOST_ACC constexpr static void multiplyAndSplit64to32(
-        std::uint64_t const a,
-        std::uint64_t const b,
-        std::uint32_t& resultHigh,
-        std::uint32_t& resultLow)
+    ALPAKA_FN_HOST_ACC constexpr static auto multiplyAndSplit64to32(std::uint64_t const a, std::uint64_t const b)
+        -> std::pair<std::uint32_t, std::uint32_t>
     {
         std::uint64_t res64 = a * b;
-        resultHigh = high32Bits(res64);
-        resultLow = low32Bits(res64);
+        return std::pair<std::uint32_t, std::uint32_t>{high32Bits(res64), low32Bits(res64)};
     }
 } // namespace alpaka::rand

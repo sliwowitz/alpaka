@@ -70,9 +70,8 @@ namespace alpaka::rand::engine
          */
         ALPAKA_FN_HOST_ACC auto singleRound(Counter const& counter, Key const& key)
         {
-            std::uint32_t H0, L0, H1, L1;
-            multiplyAndSplit64to32(counter[0], this->MULTIPLITER_4x32_0, H0, L0);
-            multiplyAndSplit64to32(counter[2], this->MULTIPLITER_4x32_1, H1, L1);
+            const auto [H0, L0] = multiplyAndSplit64to32(counter[0], this->MULTIPLITER_4x32_0);
+            const auto [H1, L1] = multiplyAndSplit64to32(counter[2], this->MULTIPLITER_4x32_1);
             return Counter{H1 ^ counter[1] ^ key[0], L1, H0 ^ counter[3] ^ key[1], L0};
         }
 
