@@ -1,5 +1,5 @@
 #
-# Copyright 2015-2020 Benjamin Worpitz, Jan Stephan
+# Copyright 2021 Benjamin Worpitz, Jan Stephan, Bernhard Manfred Gruber
 #
 # This file is part of alpaka.
 #
@@ -30,7 +30,7 @@ string(REGEX MATCH "([0-9]+)" ALPAKA_VERSION_PATCH  ${ALPAKA_VERSION_PATCH_HPP})
 set(PACKAGE_VERSION "${ALPAKA_VERSION_MAJOR}.${ALPAKA_VERSION_MINOR}.${ALPAKA_VERSION_PATCH}")
 
 project(alpaka VERSION      ${ALPAKA_VERSION_MAJOR}.${ALPAKA_VERSION_MINOR}.${ALPAKA_VERSION_PATCH}
-               DESCRIPTION  "The alpaka library is a header-only C++14 abstraction library for accelerator development."
+               DESCRIPTION  "The alpaka library is a header-only C++17 abstraction library for accelerator development."
                HOMEPAGE_URL "https://github.com/alpaka-group/alpaka"
                LANGUAGES    CXX)
 
@@ -39,12 +39,15 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 ################################################################################
 # Options and Variants
 
-option(alpaka_BUILD_EXAMPLES "Build the examples" OFF)
+option(ALPAKA_BUILD_EXAMPLES "Build the examples" OFF)
 
 option(BUILD_TESTING "Build the testing tree." OFF)
 
-option(alpaka_INSTALL_TEST_HEADER "Install headers of the namespace alpaka::test. Attention, headers are not designed for production code, see documentation." OFF)
+option(ALPAKA_INSTALL_TEST_HEADER "Install headers of the namespace alpaka::test. Attention, headers are not designed for production code, see documentation." OFF)
 include(CTest)
+
+include(CMakeDependentOption)
+cmake_dependent_option(ALPAKA_CHECK_HEADERS "Check all alpaka headers as part of the tests whether they can be compiled standalone." OFF BUILD_TESTING OFF)
 
 ################################################################################
 # Internal variables.
@@ -69,20 +72,14 @@ include(${_ALPAKA_ADD_EXECUTABLE_FILE})
 set(_ALPAKA_ADD_LIBRARY_FILE "${_ALPAKA_ROOT_DIR}/cmake/addLibrary.cmake")
 include(${_ALPAKA_ADD_LIBRARY_FILE})
 
-# Add module search path
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${_ALPAKA_ROOT_DIR}/cmake/modules/")
-
-# parse environment variable `CMAKE_MODULE_PATH`
-if(DEFINED ENV{CMAKE_MODULE_PATH})
-    string(REPLACE ":" ";" ENV_CMAKE_MODULE_PATH $ENV{CMAKE_MODULE_PATH})
-    foreach(_PREFIX_PATH ${ENV_CMAKE_MODULE_PATH})
-        set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${_PREFIX_PATH}")
-    endforeach()
-endif()
-
 # Set include directories
 set(_ALPAKA_INCLUDE_DIRECTORY "${_ALPAKA_ROOT_DIR}/include")
 set(_ALPAKA_SUFFIXED_INCLUDE_DIR "${_ALPAKA_INCLUDE_DIRECTORY}/alpaka")
+
+# the sequential accelerator is required for the tests and examples
+if(NOT DEFINED ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLE AND (ALPAKA_BUILD_EXAMPLES OR BUILD_TESTING))
+  option(ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLE "enable alpaka serial accelerator" ON)
+endif()
 
 include(${_ALPAKA_ROOT_DIR}/cmake/alpakaCommon.cmake)
 
@@ -90,8 +87,8 @@ include(${_ALPAKA_ROOT_DIR}/cmake/alpakaCommon.cmake)
 append_recursive_files_add_to_src_group("${_ALPAKA_SUFFIXED_INCLUDE_DIR}" "${_ALPAKA_SUFFIXED_INCLUDE_DIR}" "hpp" _ALPAKA_FILES_HEADER)
 append_recursive_files_add_to_src_group("${_ALPAKA_SUFFIXED_INCLUDE_DIR}" "${_ALPAKA_SUFFIXED_INCLUDE_DIR}" "h" _ALPAKA_FILES_HEADER)
 
-# remove headers of the folder alpaka/test, if alpaka_INSTALL_TEST_HEADER is disabled
-if(NOT alpaka_INSTALL_TEST_HEADER)
+# remove headers of the folder alpaka/test, if ALPAKA_INSTALL_TEST_HEADER is disabled
+if(NOT ALPAKA_INSTALL_TEST_HEADER)
   list(FILTER _ALPAKA_FILES_HEADER EXCLUDE REGEX "(.*)/alpaka/test/(.*)")
 endif()
 
@@ -135,7 +132,7 @@ endif()
 ################################################################################
 # Add subdirectories
 
-if(alpaka_BUILD_EXAMPLES)
+if(ALPAKA_BUILD_EXAMPLES)
     add_subdirectory("example/")
 endif()
 if(BUILD_TESTING)
@@ -171,7 +168,7 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
                   "${PROJECT_BINARY_DIR}/alpakaConfigVersion.cmake"
             DESTINATION "${_ALPAKA_INSTALL_CMAKEDIR}")
 
-    if(alpaka_INSTALL_TEST_HEADER)
+    if(ALPAKA_INSTALL_TEST_HEADER)
         install(DIRECTORY "${_ALPAKA_SUFFIXED_INCLUDE_DIR}"
 	        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
     else()
@@ -184,8 +181,5 @@ if(${CMAKE_PROJECT_NAME} STREQUAL ${PROJECT_NAME})
                   "${_ALPAKA_ROOT_DIR}/cmake/addLibrary.cmake"
                   "${_ALPAKA_ROOT_DIR}/cmake/alpakaCommon.cmake"
                   "${_ALPAKA_ROOT_DIR}/cmake/common.cmake"
-            DESTINATION "${_ALPAKA_INSTALL_CMAKEDIR}")
-
-    install(DIRECTORY "${_ALPAKA_ROOT_DIR}/cmake/modules"
             DESTINATION "${_ALPAKA_INSTALL_CMAKEDIR}")
 endif()

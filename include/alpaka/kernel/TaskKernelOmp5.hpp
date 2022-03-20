@@ -1,4 +1,4 @@
-/* Copyright 2019 Benjamin Worpitz, René Widera
+/* Copyright 2022 Benjamin Worpitz, René Widera, Bernhard Manfred Gruber, Antonio Di Pilato
  *
  * This file is part of alpaka.
  *
@@ -135,7 +135,7 @@ namespace alpaka
             // `When an if(scalar-expression) evaluates to false, the structured block is executed on the host.`
             auto argsD = m_args;
             auto kernelFnObj = m_kernelFnObj;
-            const auto iDevice = dev.iDevice();
+            const auto iDevice = dev.getNativeHandle();
 #    pragma omp target device(iDevice)
             {
 #    pragma omp teams distribute num_teams(teamCount) // thread_limit(blockThreadCount)
@@ -147,8 +147,8 @@ namespace alpaka
                     {
                         int const iNumTeams(::omp_get_num_teams());
                         printf("%s omp_get_num_teams: %d\n", __func__, iNumTeams);
+                        printf("threadElemCount_dev %d\n", int(threadElemExtent[0u]));
                     }
-                    printf("threadElemCount_dev %d\n", int(threadElemExtent[0u]));
 #    endif
                     AccOmp5<TDim, TIdx>
                         acc(gridBlockExtent, blockThreadExtent, threadElemExtent, t, blockSharedMemDynSizeBytes);

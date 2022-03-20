@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2020 Benjamin Worpitz, Axel Huebl, Jan Stephan
+# Copyright 2021 Benjamin Worpitz, Axel Huebl, Jan Stephan, Bernhard Manfred Gruber
 #
 # This file is part of alpaka.
 #
@@ -8,7 +8,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 
-if(NOT ALPAKA_CI OR (ALPAKA_CI AND ALPAKA_CI_ANALYSIS))
+if(ALPAKA_CHECK_HEADERS)
 
     set(_TARGET_NAME "headerCheckTest")
 

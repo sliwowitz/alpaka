@@ -1,4 +1,4 @@
-/** Copyright 2019 Jakob Krude, Benjamin Worpitz
+/** Copyright 2022 Jakob Krude, Benjamin Worpitz, Jan Stephan
  *
  * This file is part of alpaka.
  *
@@ -36,7 +36,7 @@ namespace alpaka
         /* ranges is not a constexpr, so that it's accessible via for loop*/                                          \
         static constexpr Arity arity = ARITY;                                                                         \
         static constexpr size_t arity_nr = static_cast<size_t>(ARITY);                                                \
-        const Range ranges[arity_nr] = {__VA_ARGS__};                                                                 \
+        Range ranges[arity_nr] = {__VA_ARGS__};                                                                       \
                                                                                                                       \
         ALPAKA_NO_HOST_ACC_WARNING                                                                                    \
         template<                                                                                                     \
@@ -53,9 +53,8 @@ namespace alpaka
             typename TAcc = std::nullptr_t,                                                                           \
             typename... TArgs, /* SFINAE: Enables if called from host. */                                             \
             typename std::enable_if<std::is_same<TAcc, std::nullptr_t>::value, int>::type = 0>                        \
-        ALPAKA_FN_HOST auto execute(TAcc const& acc, TArgs const&... args) const                                      \
+        ALPAKA_FN_HOST auto execute(TAcc const& /* acc */, TArgs const&... args) const                                \
         {                                                                                                             \
-            alpaka::ignore_unused(acc);                                                                               \
             return STD_OP(args...);                                                                                   \
         }                                                                                                             \
                                                                                                                       \
@@ -75,10 +74,9 @@ namespace alpaka
             return execute(acc, args.arg[0], args.arg[1]);                                                            \
         }                                                                                                             \
                                                                                                                       \
-        friend std::ostream& operator<<(std::ostream& out, const NAME& op)                                            \
+        friend std::ostream& operator<<(std::ostream& out, const NAME& /* op */)                                      \
         {                                                                                                             \
             out << #NAME;                                                                                             \
-            alpaka::ignore_unused(op);                                                                                \
             return out;                                                                                               \
         }                                                                                                             \
     };

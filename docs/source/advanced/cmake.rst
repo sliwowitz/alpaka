@@ -1,7 +1,7 @@
 CMake Arguments
 ===============
 
-Alpaka configures a lot of its functionality at compile time. Therefore a lot of compiler and link flags are needed, which are set by ``CMake`` arguments. The beginning of this section introduces the general Alpaca flag. The last parts of the section describe back-end specific flags.
+Alpaka configures a lot of its functionality at compile time. Therefore a lot of compiler and link flags are needed, which are set by CMake arguments. The beginning of this section introduces the general Alpaca flag. The last parts of the section describe back-end specific flags.
 
 .. hint::
 
@@ -27,7 +27,7 @@ ALPAKA_CXX_STANDARD
 
      Set the C++ standard version.
 
-alpaka_BUILD_EXAMPLES
+ALPAKA_BUILD_EXAMPLES
   .. code-block::
 
      Build the examples.
@@ -37,7 +37,7 @@ BUILD_TESTING
 
      Build the testing tree.
 
-alpaka_INSTALL_TEST_HEADER
+ALPAKA_INSTALL_TEST_HEADER
   .. code-block::
 
      Install headers of the namespace alpaka::test.
@@ -252,6 +252,13 @@ ALPAKA_ACC_GPU_HIP_ONLY_MODE
   .. code-block::
 
      Only back-ends using HIP can be enabled in this mode.
+
+GPU_TARGETS
+  .. code-block::
+
+     Set the GPU architecture: e.g. "gfx900;gfx906;gfx908".
+
+A list of the GPU architectures can be found `here <https://llvm.org/docs/AMDGPUUsage.html#processors>`_.
 
 ALPAKA_HIP_KEEP_FILES
   .. code-block::

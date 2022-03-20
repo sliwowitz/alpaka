@@ -1,4 +1,4 @@
-/* Copyright 2019 Axel Huebl, Benjamin Worpitz, Matthias Werner
+/* Copyright 2022 Axel Huebl, Benjamin Worpitz, Matthias Werner, Andrea Bocci, Jan Stephan, Bernhard Manfred Gruber
  *
  * This file is part of alpaka.
  *
@@ -10,7 +10,7 @@
 #pragma once
 
 #include <alpaka/core/Common.hpp>
-#include <alpaka/core/Unused.hpp>
+#include <alpaka/core/Unreachable.hpp>
 #include <alpaka/dev/Traits.hpp>
 #include <alpaka/dim/Traits.hpp>
 #include <alpaka/elem/Traits.hpp>
@@ -38,12 +38,6 @@ namespace alpaka
         template<typename TView, typename TDev, typename TSfinae = void>
         struct GetPtrDev;
 
-        namespace detail
-        {
-            template<typename TIdx, typename TView, typename TSfinae = void>
-            struct GetPitchBytesDefault;
-        } // namespace detail
-
         //! The pitch in bytes.
         //! This is the distance in bytes in the linear memory between two consecutive elements in the next higher
         //! dimension (TIdx-1).
@@ -52,41 +46,27 @@ namespace alpaka
         template<typename TIdx, typename TView, typename TSfinae = void>
         struct GetPitchBytes
         {
-            ALPAKA_FN_HOST static auto getPitchBytes(TView const& view) -> Idx<TView>
+            using ViewIdx = Idx<TView>;
+
+            ALPAKA_FN_HOST static auto getPitchBytes(TView const& view) -> ViewIdx
             {
-                return detail::GetPitchBytesDefault<TIdx, TView>::getPitchBytesDefault(view);
+                return getPitchBytesDefault(view);
+            }
+
+        private:
+            static auto getPitchBytesDefault(TView const& view) -> ViewIdx
+            {
+                constexpr auto idx = TIdx::value;
+                constexpr auto viewDim = Dim<TView>::value;
+                if constexpr(idx < viewDim - 1)
+                    return getExtent<idx>(view) * GetPitchBytes<DimInt<idx + 1>, TView>::getPitchBytes(view);
+                else if constexpr(idx == viewDim - 1)
+                    return getExtent<viewDim - 1>(view) * static_cast<ViewIdx>(sizeof(Elem<TView>));
+                else
+                    return static_cast<ViewIdx>(sizeof(Elem<TView>));
+                ALPAKA_UNREACHABLE({});
             }
         };
-
-        namespace detail
-        {
-            template<typename TIdx, typename TView>
-                struct GetPitchBytesDefault < TIdx,
-                TView, std::enable_if_t<TIdx::value<(Dim<TView>::value - 1)>>
-            {
-                ALPAKA_FN_HOST static auto getPitchBytesDefault(TView const& view) -> Idx<TView>
-                {
-                    return extent::getExtent<TIdx::value>(view)
-                        * GetPitchBytes<DimInt<TIdx::value + 1>, TView>::getPitchBytes(view);
-                }
-            };
-            template<typename TView>
-            struct GetPitchBytesDefault<DimInt<Dim<TView>::value - 1u>, TView>
-            {
-                ALPAKA_FN_HOST static auto getPitchBytesDefault(TView const& view) -> Idx<TView>
-                {
-                    return extent::getExtent<Dim<TView>::value - 1u>(view) * sizeof(Elem<TView>);
-                }
-            };
-            template<typename TView>
-            struct GetPitchBytesDefault<DimInt<Dim<TView>::value>, TView>
-            {
-                ALPAKA_FN_HOST static auto getPitchBytesDefault(TView const&) -> Idx<TView>
-                {
-                    return sizeof(Elem<TView>);
-                }
-            };
-        } // namespace detail
 
         //! The memory set task trait.
         //!
@@ -191,6 +171,17 @@ namespace alpaka
         enqueue(queue, createTaskMemset(view, byte, extent));
     }
 
+    //! Sets the whole view to the given value.
+    //!
+    //! \param queue The queue to enqueue the view fill task into.
+    //! \param view The memory view to fill.
+    //! \param byte Value to set for each element of the specified view.
+    template<typename TView, typename TQueue>
+    ALPAKA_FN_HOST auto memset(TQueue& queue, TView& view, std::uint8_t const& byte) -> void
+    {
+        enqueue(queue, createTaskMemset(view, byte, getExtentVec(view)));
+    }
+
     //! Creates a memory copy task.
     //!
     //! \param viewDst The destination memory view.
@@ -206,7 +197,7 @@ namespace alpaka
             Dim<TViewDst>::value == Dim<TExtent>::value,
             "The destination view and the extent are required to have the same dimensionality!");
         static_assert(
-            std::is_same<Elem<TViewDst>, std::remove_const_t<Elem<TViewSrc>>>::value,
+            std::is_same_v<Elem<TViewDst>, std::remove_const_t<Elem<TViewSrc>>>,
             "The source and the destination view are required to have the same element type!");
 
         return traits::CreateTaskMemcpy<Dim<TViewDst>, Dev<TViewDst>, Dev<TViewSrc>>::createTaskMemcpy(
@@ -226,6 +217,17 @@ namespace alpaka
         -> void
     {
         enqueue(queue, createTaskMemcpy(viewDst, viewSrc, extent));
+    }
+
+    //! Copies the whole view possibly between different memory spaces.
+    //!
+    //! \param queue The queue to enqueue the view copy task into.
+    //! \param viewDst The destination memory view.
+    //! \param viewSrc The source memory view.
+    template<typename TViewSrc, typename TViewDst, typename TQueue>
+    ALPAKA_FN_HOST auto memcpy(TQueue& queue, TViewDst& viewDst, TViewSrc const& viewSrc) -> void
+    {
+        enqueue(queue, createTaskMemcpy(viewDst, viewSrc, getExtentVec(viewSrc)));
     }
 
     namespace detail
@@ -273,18 +275,15 @@ namespace alpaka
         struct Print<DimInt<Dim<TView>::value - 1u>, TView>
         {
             ALPAKA_FN_HOST static auto print(
-                TView const& view,
+                TView const& /* view */,
                 Elem<TView> const* const ptr,
                 Vec<Dim<TView>, Idx<TView>> const& extent,
                 std::ostream& os,
                 std::string const& elementSeparator,
-                std::string const& rowSeparator,
+                std::string const& /* rowSeparator */,
                 std::string const& rowPrefix,
                 std::string const& rowSuffix) -> void
             {
-                alpaka::ignore_unused(view);
-                alpaka::ignore_unused(rowSeparator);
-
                 os << rowPrefix;
 
                 auto const lastIdx(extent[Dim<TView>::value - 1u] - 1u);
@@ -319,7 +318,7 @@ namespace alpaka
         detail::Print<DimInt<0u>, TView>::print(
             view,
             getPtrNative(view),
-            extent::getExtentVec(view),
+            getExtentVec(view),
             os,
             elementSeparator,
             rowSeparator,
@@ -334,10 +333,10 @@ namespace alpaka
         struct CreatePitchBytes
         {
             ALPAKA_NO_HOST_ACC_WARNING
-            template<typename TPitch>
-            ALPAKA_FN_HOST_ACC static auto create(TPitch const& pitch) -> Idx<TPitch>
+            template<typename TView>
+            ALPAKA_FN_HOST_ACC static auto create(TView const& view) -> Idx<TView>
             {
-                return getPitchBytes<Tidx>(pitch);
+                return getPitchBytes<Tidx>(view);
             }
         };
 
@@ -346,28 +345,32 @@ namespace alpaka
         ALPAKA_FN_HOST inline auto calculatePitchesFromExtents(Vec<TDim, TIdx> const& extent)
         {
             Vec<TDim, TIdx> pitchBytes(Vec<TDim, TIdx>::all(0));
-            pitchBytes[TDim::value - 1u] = extent[TDim::value - 1u] * static_cast<TIdx>(sizeof(TElem));
-            for(TIdx i = TDim::value - 1u; i > static_cast<TIdx>(0u); --i)
+            if constexpr(TDim::value > 0)
             {
-                pitchBytes[i - 1] = extent[i - 1] * pitchBytes[i];
+                pitchBytes[TDim::value - 1u] = extent[TDim::value - 1u] * static_cast<TIdx>(sizeof(TElem));
+                for(TIdx i = TDim::value - 1u; i > static_cast<TIdx>(0u); --i)
+                {
+                    pitchBytes[i - 1] = extent[i - 1] * pitchBytes[i];
+                }
             }
             return pitchBytes;
         }
     } // namespace detail
     //! \return The pitch vector.
-    template<typename TPitch>
-    auto getPitchBytesVec(TPitch const& pitch = TPitch()) -> Vec<Dim<TPitch>, Idx<TPitch>>
+    template<typename TView>
+    auto getPitchBytesVec(TView const& view = TView()) -> Vec<Dim<TView>, Idx<TView>>
     {
-        return createVecFromIndexedFn<Dim<TPitch>, detail::CreatePitchBytes>(pitch);
+        return createVecFromIndexedFn<Dim<TView>, detail::CreatePitchBytes>(view);
     }
+
     //! \return The pitch but only the last N elements.
-    template<typename TDim, typename TPitch>
-    ALPAKA_FN_HOST auto getPitchBytesVecEnd(TPitch const& pitch = TPitch()) -> Vec<TDim, Idx<TPitch>>
+    template<typename TDim, typename TView>
+    ALPAKA_FN_HOST auto getPitchBytesVecEnd(TView const& view = TView()) -> Vec<TDim, Idx<TView>>
     {
         using IdxOffset = std::integral_constant<
             std::intmax_t,
-            static_cast<std::intmax_t>(Dim<TPitch>::value) - static_cast<std::intmax_t>(TDim::value)>;
-        return createVecFromIndexedFnOffset<TDim, detail::CreatePitchBytes, IdxOffset>(pitch);
+            static_cast<std::intmax_t>(Dim<TView>::value) - static_cast<std::intmax_t>(TDim::value)>;
+        return createVecFromIndexedFnOffset<TDim, detail::CreatePitchBytes, IdxOffset>(view);
     }
 
     //! \return A view to static device memory.
@@ -413,55 +416,30 @@ namespace alpaka
         return traits::CreateViewPlainPtr<TDev>::createViewPlainPtr(dev, pMem, extent, pitch);
     }
 
-    //! Creates a view to a device std::vector
+    //! Creates a view to a contiguous container of device-accessible memory.
     //!
-    //! \param dev Device from where vec can be accessed.
-    //! \param vec std::vector container. The data hold by the container the must be accessible from the given device.
+    //! \param dev Device from which the container can be accessed.
+    //! \param con Contiguous container. The container must provide a `data()` method. The data held by the container
+    //!            must be accessible from the given device. The `GetExtent` trait must be defined for the container.
     //! \return A view to device memory.
-    template<typename TDev, typename TElem, typename TAllocator>
-    auto createView(TDev const& dev, std::vector<TElem, TAllocator>& vec)
+    template<typename TDev, typename TContainer>
+    auto createView(TDev const& dev, TContainer& con)
     {
-        //! \todo With C++17 use std::data() and add support for all contiguous container
-        return createView(dev, vec.data(), extent::getExtent(vec));
+        return createView(dev, std::data(con), getExtent(con));
     }
 
-    //! Creates a view to a device std::vector
+    //! Creates a view to a contiguous container of device-accessible memory.
     //!
-    //! \param dev Device from where pMem can be accessed.
-    //! \param vec std::vector container. The data hold by the container the must be accessible from the given device.
-    //! \param extent Number of elements represented by vec.
-    //!               Using a multi dimensional extent will result in a multi dimension view to the memory represented
-    //!               by vec.
+    //! \param dev Device from which the container can be accessed.
+    //! \param con Contiguous container. The container must provide a `data()` method. The data held by the container
+    //!            must be accessible from the given device. The `GetExtent` trait must be defined for the container.
+    //! \param extent Number of elements held by the container. Using a multi-dimensional extent will result in a
+    //!               multi-dimensional view to the memory represented by the container.
     //! \return A view to device memory.
-    template<typename TDev, typename TElem, typename TAllocator, typename TExtent>
-    auto createView(TDev const& dev, std::vector<TElem, TAllocator>& vec, TExtent const& extent)
+    template<typename TDev, typename TContainer, typename TExtent>
+    auto createView(TDev const& dev, TContainer& con, TExtent const& extent)
     {
-        return createView(dev, vec.data(), extent);
-    }
-
-    //! Creates a view to a device std::array
-    //!
-    //! \param dev Device from where array can be accessed.
-    //! \param array std::array container. The data hold by the container the must be accessible from the given device.
-    //! \return A view to device memory.
-    template<typename TDev, typename TElem, std::size_t Tsize>
-    auto createView(TDev const& dev, std::array<TElem, Tsize>& array)
-    {
-        return createView(dev, array.data(), extent::getExtent(array));
-    }
-
-    //! Creates a view to a device std::vector
-    //!
-    //! \param dev Device from where array can be accessed.
-    //! \param array std::array container. The data hold by the container the must be accessible from the given device
-    //! \param extent Number of elements represented by array.
-    //!               Using a multi dimensional extent will result in a multi dimension view to the memory represented
-    //!               by array.
-    //! \return A view to device memory.
-    template<typename TDev, typename TElem, std::size_t Tsize, typename TExtent>
-    auto createView(TDev const& dev, std::array<TElem, Tsize>& array, TExtent const& extent)
-    {
-        return createView(dev, array.data(), extent);
+        return createView(dev, std::data(con), extent);
     }
 
     //! Creates a sub view to an existing view.

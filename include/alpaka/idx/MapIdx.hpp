@@ -1,4 +1,4 @@
-/* Copyright 2019 Axel Huebl, Benjamin Worpitz, Erik Zenker
+/* Copyright 2022 Axel Huebl, Benjamin Worpitz, Erik Zenker, Jan Stephan, Jeffrey Kelling, Bernhard Manfred Gruber
  *
  * This file is part of alpaka.
  *
@@ -10,7 +10,6 @@
 #pragma once
 
 #include <alpaka/core/Common.hpp>
-#include <alpaka/core/Unused.hpp>
 #include <alpaka/vec/Vec.hpp>
 
 #include <type_traits>
@@ -34,10 +33,8 @@ namespace alpaka
             template<typename TElem>
             ALPAKA_FN_HOST_ACC static auto mapIdx(
                 Vec<DimInt<TidxDim>, TElem> const& idx,
-                Vec<DimInt<TidxDim>, TElem> const& extent) -> Vec<DimInt<TidxDim>, TElem>
+                [[maybe_unused]] Vec<DimInt<TidxDim>, TElem> const& extent) -> Vec<DimInt<TidxDim>, TElem>
             {
-                alpaka::ignore_unused(extent);
-
                 return idx;
             }
         };
@@ -64,8 +61,16 @@ namespace alpaka
 
                 // in-between
                 TElem hyperPlanesBefore = extent[lastIdx];
+#if BOOST_COMP_PGI && (defined(ALPAKA_ACC_ANY_BT_OMP5_ENABLED) || defined(ALPAKA_ACC_ANY_BT_OACC_ENABLED))            \
+    && !defined(TPR30645)
+                for(std::size_t a(0u); a < lastIdx - 1; ++a)
+                {
+                    const auto r = a + 1; // NVHPC does sometimes not understand, that loops which do not start at zero
+                                          // can have zero iterations
+#else
                 for(std::size_t r(1u); r < lastIdx; ++r)
                 {
+#endif
                     std::size_t const d = lastIdx - r;
                     idxNd[d] = static_cast<TElem>(idx[0u] / hyperPlanesBefore % extent[d]);
                     hyperPlanesBefore *= extent[d];
@@ -106,8 +111,7 @@ namespace alpaka
     //! \tparam TidxDimOut Dimension of the index vector to map to.
     //! \tparam TidxDimIn Dimension of the index vector to map from.
     //! \tparam TElem Type of the elements of the index vector to map from.
-    ALPAKA_NO_HOST_ACC_WARNING
-    template<std::size_t TidxDimOut, std::size_t TidxDimIn, typename TElem>
+    ALPAKA_NO_HOST_ACC_WARNING template<std::size_t TidxDimOut, std::size_t TidxDimIn, typename TElem>
     ALPAKA_FN_HOST_ACC auto mapIdx(
         Vec<DimInt<TidxDimIn>, TElem> const& idx,
         Vec<DimInt<(TidxDimOut < TidxDimIn) ? TidxDimIn : TidxDimOut>, TElem> const& extent)
@@ -136,16 +140,14 @@ namespace alpaka
             template<typename TElem>
             ALPAKA_FN_HOST_ACC static auto mapIdxPitchBytes(
                 Vec<DimInt<TidxDim>, TElem> const& idx,
-                Vec<DimInt<TidxDim>, TElem> const& pitch) -> Vec<DimInt<TidxDim>, TElem>
+                [[maybe_unused]] Vec<DimInt<TidxDim>, TElem> const& pitch) -> Vec<DimInt<TidxDim>, TElem>
             {
-                alpaka::ignore_unused(pitch);
-
                 return idx;
             }
         };
         //! Maps a 1 dimensional index to a N dimensional index assuming a buffer wihtout padding.
         template<std::size_t TidxDimOut>
-        struct MapIdxPitchBytes<TidxDimOut, 1u, typename std::enable_if<TidxDimOut != 1u>::type>
+        struct MapIdxPitchBytes<TidxDimOut, 1u, std::enable_if_t<TidxDimOut != 1u>>
         {
             // \tparam TElem Type of the index values.
             // \param idx Idx to be mapped.
@@ -174,7 +176,7 @@ namespace alpaka
         };
         //! Maps a N dimensional index to a 1 dimensional index assuming a buffer wihtout padding.
         template<std::size_t TidxDimIn>
-        struct MapIdxPitchBytes<1u, TidxDimIn, typename std::enable_if<TidxDimIn != 1u>::type>
+        struct MapIdxPitchBytes<1u, TidxDimIn, std::enable_if_t<TidxDimIn != 1u>>
         {
             // \tparam TElem Type of the index values.
             // \param idx Idx to be mapped.

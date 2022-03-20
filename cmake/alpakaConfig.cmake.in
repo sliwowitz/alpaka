@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2020 Benjamin Worpitz, Erik Zenker, Axel Huebl, Jan Stephan
+# Copyright 2021 Benjamin Worpitz, Erik Zenker, Axel Huebl, Jan Stephan, Bernhard Manfred Gruber
 #
 # This file is part of alpaka.
 #
@@ -38,17 +38,6 @@ include(${_ALPAKA_ADD_LIBRARY_FILE})
 
 # Set found to true initially and set it to false if a required dependency is missing.
 set(_ALPAKA_FOUND TRUE)
-
-# Add module search path
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${_ALPAKA_ROOT_DIR}/modules/")
-
-# parse environment variable `CMAKE_MODULE_PATH`
-if(DEFINED ENV{CMAKE_MODULE_PATH})
-    string(REPLACE ":" ";" ENV_CMAKE_MODULE_PATH $ENV{CMAKE_MODULE_PATH})
-    foreach(_PREFIX_PATH ${ENV_CMAKE_MODULE_PATH})
-    set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${_PREFIX_PATH}")
-    endforeach()
-endif()
 
 set(_ALPAKA_INCLUDE_DIRECTORY "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_INCLUDEDIR@")
 

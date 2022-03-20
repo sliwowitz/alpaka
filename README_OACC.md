@@ -19,7 +19,7 @@ enable only the OpenACC backend.
 cmake .. \
   -DALPAKA_ACC_ANY_BT_OACC_ENABLE=on \
   -DBUILD_TESTING=on \
-  -Dalpaka_BUILD_EXAMPLES=on \
+  -DALPAKA_BUILD_EXAMPLES=on \
 ```
 All other backends are disabled for faster compilation/testing and reduced
 environment requirements. The cmake package OpenACC is used to detect the
@@ -28,8 +28,9 @@ required OpenACC flags for the compiler. Additional flags can be added, e.g:
   ```bash
     -DCMAKE_CXX_FLAGS="-foffload=disable"
   ```
-  As of gcc 9.2 no test will compile if the nvptx backend is enabled. If cmake
-  fails to set the `-fopenacc` flag, it can be set manually.
+  - To run set the environment variable `ACC_DEVICE_TYPE=host`.
+  - As of gcc 9.2 no test will compile if the nvptx backend is enabled. If cmake
+    fails to set the `-fopenacc` flag, it can be set manually.
 - nvhpc, target tesla (set `$CC`, `$CXX` and `$CUDA_HOME` to appropriate values
   for your system to use nvhpc):
   ```bash

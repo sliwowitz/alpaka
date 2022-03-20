@@ -4,7 +4,7 @@ Library Interface
 As described in the chapter about the :doc:`Abstraction </basic/abstraction>`, the general design of the library is very similar to *CUDA* and *OpenCL* but extends both by some points, while not requiring any language extensions.
 General interface design as well as interface implementation decisions differentiating *alpaka* from those libraries are described in the Rationale section.
 It uses C++ because it is one of the most performant languages available on nearly all systems.
-Furthermore, C++14 allows to describe the concepts in a very abstract way that is not possible with many other languages.
+Furthermore, C++17 allows to describe the concepts in a very abstract way that is not possible with many other languages.
 The *alpaka* library extensively makes use of advanced functional C++ template meta-programming techniques.
 The Implementation Details section discusses the C++ library and the way it provides extensibility and optimizability.
 
@@ -161,9 +161,10 @@ guarantees the following **for the local thread**  and regardless of global or s
 **Note**: ``alpaka::mem_fence`` does not guarantee that there will be no *LoadStore* reordering. Depending on the
 back-end, loads occurring before the fence may still be reordered with stores occurring after the fence.
 
-Memory fences can be issued on the block level (``alpaka::memory_scope::Block``) and the device level
-(``alpaka::memory_scope::Device``). Depending on the memory scope, the *StoreStore* order will be visible to other
-threads in the same block or the whole device.
+Memory fences can be issued on the block level (``alpaka::memory_scope::Block``), grid level
+(``alpaka::memory_scope::Grid``) and the device level (``alpaka::memory_scope::Device``).
+Depending on the memory scope, the *StoreStore* order will be visible to other threads in the same block, in the same grid
+(_i.e._ within the same kernel launch), or on the whole device (_i.e._ across concurrent kernel launches).
 
 Some accelerators (like GPUs) follow weaker cache coherency rules than x86 CPUs. In order to avoid storing to (or loading
 from) a cache or register it is necessary to prefix all observed buffers with `ALPAKA_DEVICE_VOLATILE`. This enforces

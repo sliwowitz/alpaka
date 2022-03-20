@@ -282,10 +282,11 @@ Atomic operations
          AtomicAdd, AtomicSub, AtomicMin, AtomicMax, AtomicExch,
          AtomicInc, AtomicDec, AtomicAnd, AtomicOr, AtomicXor, AtomicCas
 
-Memory fences on block- or device level (guarantees LoadLoad and StoreStore ordering)
+Memory fences on block-, grid- or device level (guarantees LoadLoad and StoreStore ordering)
   .. code-block:: c++
 
      mem_fence(acc, memory_scope::Block{});
+     mem_fence(acc, memory_scope::Grid{});
      mem_fence(acc, memory_scope::Device{});
 
 Warp-level operations
@@ -307,5 +308,5 @@ Generate random numbers
   .. code-block:: c++
 
      auto distribution = rand::distribution::createNormalReal<double>(acc);
-     auto generator = rand::generator::createDefault(acc, seed, subsequence);
+     auto generator = rand::engine::createDefault(acc, seed, subsequence);
      auto number = distribution(generator);

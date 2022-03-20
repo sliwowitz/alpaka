@@ -1,4 +1,4 @@
-/* Copyright 2019 Benjamin Worpitz
+/* Copyright 2020 Benjamin Worpitz, Bernhard Manfred Gruber
  *
  * This file is part of alpaka.
  *
@@ -31,7 +31,7 @@ namespace alpaka
         struct PltfType;
 
         template<typename TPltf>
-        struct PltfType<TPltf, typename std::enable_if<concepts::ImplementsConcept<ConceptPltf, TPltf>::value>::type>
+        struct PltfType<TPltf, std::enable_if_t<concepts::ImplementsConcept<ConceptPltf, TPltf>::value>>
         {
             using type = typename concepts::ImplementationBase<ConceptDev, TPltf>;
         };

@@ -1,4 +1,4 @@
-/* Copyright 2019 Benjamin Worpitz, René Widera
+/* Copyright 2021 Benjamin Worpitz, René Widera, Bernhard Manfred Gruber
  *
  * This file is part of Alpaka.
  *
@@ -30,7 +30,6 @@
 #    include <alpaka/dev/DevOacc.hpp>
 #    include <alpaka/idx/MapIdx.hpp>
 #    include <alpaka/kernel/Traits.hpp>
-#    include <alpaka/meta/ApplyTuple.hpp>
 #    include <alpaka/workdiv/WorkDivMembers.hpp>
 
 #    include <algorithm>

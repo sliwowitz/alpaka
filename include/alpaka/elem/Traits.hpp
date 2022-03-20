@@ -1,4 +1,4 @@
-/* Copyright 2019 Benjamin Worpitz
+/* Copyright 2020 Benjamin Worpitz, Bernhard Manfred Gruber
  *
  * This file is part of alpaka.
  *
@@ -30,7 +30,7 @@ namespace alpaka
     {
         //! The fundamental type elem type trait specialization.
         template<typename T>
-        struct ElemType<T, std::enable_if_t<std::is_fundamental<T>::value>>
+        struct ElemType<T, std::enable_if_t<std::is_fundamental_v<T>>>
         {
             using type = T;
         };

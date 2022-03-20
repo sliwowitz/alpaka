@@ -240,7 +240,7 @@ TEST_CASE("projection", "[accessor]")
     auto dstBuffer = alpaka::allocBuf<int, Size>(devAcc, Size{1});
 
     std::array<int, 1> host{{42}};
-    alpaka::memcpy(queue, srcBuffer, host, 1);
+    alpaka::memcpy(queue, srcBuffer, host);
 
     auto const workdiv = alpaka::WorkDivMembers<Dim, Size>{
         alpaka::Vec<Dim, Size>{Size{1}},
@@ -248,7 +248,7 @@ TEST_CASE("projection", "[accessor]")
         alpaka::Vec<Dim, Size>{Size{1}}};
     alpaka::exec<Acc>(queue, workdiv, CopyKernel{}, alpakaex::readAccess(srcBuffer), alpakaex::writeAccess(dstBuffer));
 
-    alpaka::memcpy(queue, host, dstBuffer, 1);
+    alpaka::memcpy(queue, host, dstBuffer);
 
     REQUIRE(host[0] == 84);
 }
@@ -300,8 +300,8 @@ namespace
             alpakaex::BufferAccessor<TAcc, int, 1, alpakaex::ReadAccess> const r2,
             alpakaex::BufferAccessor<TAcc, int, 1, alpakaex::ReadAccess, TIdx> const r3) const noexcept
         {
-            static_assert(std::is_same<decltype(r1), decltype(r2)>::value, "");
-            static_assert(std::is_same<decltype(r2), decltype(r3)>::value, "");
+            static_assert(std::is_same_v<decltype(r1), decltype(r2)>);
+            static_assert(std::is_same_v<decltype(r2), decltype(r3)>);
         }
     };
 
@@ -314,8 +314,8 @@ namespace
             alpakaex::BufferAccessor<TAcc, int, 1, alpakaex::WriteAccess> const w2,
             alpakaex::BufferAccessor<TAcc, int, 1, alpakaex::WriteAccess, TIdx> const w3) const noexcept
         {
-            static_assert(std::is_same<decltype(w1), decltype(w2)>::value, "");
-            static_assert(std::is_same<decltype(w2), decltype(w3)>::value, "");
+            static_assert(std::is_same_v<decltype(w1), decltype(w2)>);
+            static_assert(std::is_same_v<decltype(w2), decltype(w3)>);
         }
     };
     struct BufferAccessorKernelReadWrite
@@ -328,9 +328,9 @@ namespace
             alpakaex::BufferAccessor<TAcc, int, 1, alpakaex::ReadWriteAccess> const rw3,
             alpakaex::BufferAccessor<TAcc, int, 1, alpakaex::ReadWriteAccess, TIdx> const rw4) const noexcept
         {
-            static_assert(std::is_same<decltype(rw1), decltype(rw2)>::value, "");
-            static_assert(std::is_same<decltype(rw2), decltype(rw3)>::value, "");
-            static_assert(std::is_same<decltype(rw3), decltype(rw4)>::value, "");
+            static_assert(std::is_same_v<decltype(rw1), decltype(rw2)>);
+            static_assert(std::is_same_v<decltype(rw2), decltype(rw3)>);
+            static_assert(std::is_same_v<decltype(rw3), decltype(rw4)>);
         }
     };
 } // namespace
