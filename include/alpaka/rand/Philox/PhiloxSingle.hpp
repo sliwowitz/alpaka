@@ -5,7 +5,7 @@
 #pragma once
 
 #include "alpaka/rand/Philox/MultiplyAndSplit64to32.hpp"
-#include "alpaka/rand/Philox/PhiloxBaseTraits.hpp"
+#include "alpaka/rand/Philox/PhiloxBaseCommon.hpp"
 
 #include <utility>
 
@@ -36,19 +36,17 @@ namespace alpaka::rand::engine
      * operator(). Additionally a pointer has to be stored indicating which part of the result array is to be
      * returned next.
      *
-     * @tparam TAcc Accelerator type as defined in alpaka/acc
      * @tparam TParams Basic parameters for the Philox algorithm
      */
-    template<typename TAcc, typename TParams>
-    class PhiloxSingle : public trait::PhiloxBaseTraits<TAcc, TParams, PhiloxSingle<TAcc, TParams>>::Base
+    template<typename TParams>
+    class PhiloxSingle : public PhiloxBaseCommon<TParams, PhiloxSingle<TParams>>
     {
     public:
-        /// Specialization for different TAcc backends
-        using Traits = typename trait::PhiloxBaseTraits<TAcc, TParams, PhiloxSingle<TAcc, TParams>>;
+        using Base = PhiloxBaseCommon<TParams, PhiloxSingle<TParams>>;
 
-        using Counter = typename Traits::Counter; ///< Backend-dependent Counter type
-        using Key = typename Traits::Key; ///< Backend-dependent Key type
-        using State = PhiloxStateSingle<Counter, Key>; ///< Backend-dependent State type
+        using Counter = typename Base::Counter; ///< Counter type
+        using Key = typename Base::Key; ///< Key type
+        using State = PhiloxStateSingle<Counter, Key>; ///< State type
 
         State state; ///< Internal engine state
 

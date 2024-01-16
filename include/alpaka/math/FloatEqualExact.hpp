@@ -1,4 +1,4 @@
-/* Copyright 2021 Jiri Vyskocil
+/* Cop.hppyright 2021 Jiri Vyskocil
  * SPDX-License-Identifier: MPL-2.0
  */
 

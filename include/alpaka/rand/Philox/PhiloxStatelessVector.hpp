@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "alpaka/rand/Philox/PhiloxBaseTraits.hpp"
+#include "alpaka/rand/Philox/PhiloxStateless.hpp"
 
 #include <utility>
 
@@ -16,11 +16,10 @@ namespace alpaka::rand::engine
      * This is a convenience vs. memory size tradeoff since the user has to deal with the output array
      * themselves, but the internal state comprises only of a single counter and a key.
      *
-     * @tparam TAcc Accelerator type as defined in alpaka/acc
      * @tparam TParams Basic parameters for the Philox algorithm
      */
-    template<typename TAcc, typename TParams>
-    class PhiloxStatelessVector : public trait::PhiloxStatelessBaseTraits<TAcc, TParams>::Base
+    template<typename TParams>
+    class PhiloxStatelessVector : public PhiloxStateless<TParams>
     {
     };
 } // namespace alpaka::rand::engine
