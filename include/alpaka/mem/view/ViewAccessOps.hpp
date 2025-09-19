@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include "alpaka/dim/Traits.hpp"
+#include "alpaka/acc/Tag.hpp"
+#include "alpaka/dev/DevGenericSycl.hpp"
 #include "alpaka/extent/Traits.hpp"
 #include "alpaka/mem/view/Traits.hpp"
 
@@ -14,28 +15,32 @@
 #include <type_traits>
 #include <utility>
 
+namespace alpaka
+{
+    class DevCpu;
+} // namespace alpaka
+
 namespace alpaka::internal
 {
-    template<typename T, typename SFINAE = void>
-    inline constexpr bool isView = false;
-
-    // TODO(bgruber): replace this by a concept in C++20
-    template<typename TView>
-    inline constexpr bool isView<
-        TView,
-        std::void_t<
-            Idx<TView>,
-            Dim<TView>,
-            decltype(getPtrNative(std::declval<TView>())),
-            decltype(getPitchesInBytes(std::declval<TView>())),
-            decltype(getExtents(std::declval<TView>()))>>
-        = true;
 
     template<typename TView>
-    struct ViewAccessOps
+    concept ViewType = requires {
+        typename Idx<TView>;
+        typename Dim<TView>;
+        {
+            getPtrNative(std::declval<TView>())
+        };
+        {
+            getPitchesInBytes(std::declval<TView>())
+        };
+        {
+            getExtents(std::declval<TView>())
+        };
+    };
+
+    template<ViewType TView>
+    struct DeviceViewAccessor
     {
-        static_assert(isView<TView>);
-
     private:
         using value_type = Elem<TView>;
         using pointer = value_type*;
@@ -46,7 +51,31 @@ namespace alpaka::internal
         using Dim = alpaka::Dim<TView>;
 
     public:
-        ALPAKA_FN_HOST auto data() -> pointer
+        [[nodiscard]] ALPAKA_FN_HOST auto data() -> pointer
+        {
+            return getPtrNative(*static_cast<TView*>(this));
+        }
+
+        [[nodiscard]] ALPAKA_FN_HOST auto data() const -> const_pointer
+        {
+            return getPtrNative(*static_cast<TView const*>(this));
+        }
+    };
+
+    template<ViewType TView>
+    struct HostViewAccessor
+    {
+    private:
+        using value_type = Elem<TView>;
+        using pointer = value_type*;
+        using const_pointer = value_type const*;
+        using reference = value_type&;
+        using const_reference = value_type const&;
+        using Idx = alpaka::Idx<TView>;
+        using Dim = alpaka::Dim<TView>;
+
+    public:
+        [[nodiscard]] ALPAKA_FN_HOST auto data() -> pointer
         {
             return getPtrNative(*static_cast<TView*>(this));
         }
@@ -148,4 +177,31 @@ namespace alpaka::internal
             return *ptr_at(index);
         }
     };
+
+    template<typename TDev>
+    struct ViewAccessor
+    {
+        template<ViewType TView>
+        using AccessorType = DeviceViewAccessor<TView>;
+    };
+
+    template<>
+    struct ViewAccessor<alpaka::DevCpu>
+    {
+        template<ViewType TView>
+        using AccessorType = HostViewAccessor<TView>;
+    };
+
+#ifdef ALPAKA_ACC_SYCL_ENABLED
+    template<>
+    struct ViewAccessor<alpaka::DevGenericSycl<alpaka::TagCpuSycl>>
+    {
+        template<ViewType TView>
+        using AccessorType = HostViewAccessor<TView>;
+    };
+#endif
+
+    template<typename TDev, ViewType TView>
+    using ViewAccessorType = typename ViewAccessor<TDev>::template AccessorType<TView>;
+
 } // namespace alpaka::internal

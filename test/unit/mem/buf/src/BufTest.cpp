@@ -275,12 +275,18 @@ static auto testBufferAccessorAdaptor(
     auto const base = reinterpret_cast<uintptr_t>(std::data(buf));
     auto const expected = base + static_cast<uintptr_t>((pitch * index).sum());
     INFO("element " << index << " expected at offset " << expected - base);
-    INFO("element " << index << " returned at offset " << reinterpret_cast<uintptr_t>(&buf[index]) - base);
-    CHECK(reinterpret_cast<Elem*>(expected) == &buf[index]);
+    using Platform = alpaka::Platform<TAcc>;
+    if constexpr(
+        std::is_same_v<Platform, alpaka::PlatformCpu> or std::is_same_v<alpaka::AccToTag<TAcc>, alpaka::TagCpuSycl>)
+    {
+        INFO("element " << index << " returned at offset " << reinterpret_cast<uintptr_t>(&buf[index]) - base);
 
-    // check that an out-of-bound access is detected
-    if constexpr(Dim::value > 0)
-        CHECK_THROWS_AS((void) buf.at(extent), std::out_of_range);
+        CHECK(reinterpret_cast<Elem*>(expected) == &buf[index]);
+
+        // check that an out-of-bound access is detected
+        if constexpr(Dim::value > 0)
+            CHECK_THROWS_AS((void) buf.at(extent), std::out_of_range);
+    }
 }
 
 TEMPLATE_LIST_TEST_CASE("memBufAccessorAdaptorTest", "[memBuf]", alpaka::test::TestAccs)
