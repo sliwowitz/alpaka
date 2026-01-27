@@ -549,8 +549,8 @@ if(alpaka_ACC_GPU_HIP_ENABLE)
         enable_language(HIP)
         find_package(hip REQUIRED)
 
-        set(_alpaka_HIP_MIN_VER 5.1)
-        set(_alpaka_HIP_MAX_VER 6.2)
+        set(_alpaka_HIP_MIN_VER 6.0)
+        set(_alpaka_HIP_MAX_VER 7.0)
 
         checkCompilerCXXSupport(HIP ${alpaka_MIN_CXX_STANDARD})
 
@@ -569,9 +569,6 @@ if(alpaka_ACC_GPU_HIP_ENABLE)
 
         target_link_libraries(alpaka INTERFACE "$<$<LINK_LANGUAGE:CXX>:hip::host>")
         alpaka_set_compiler_options(HOST_DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:-D__HIP_PLATFORM_AMD__>")
-        if(${_hip_MAJOR_MINOR_VERSION} VERSION_EQUAL "5.1")
-            alpaka_set_compiler_options(HOST_DEVICE target alpaka "$<$<COMPILE_LANGUAGE:CXX>:-D__HIP_PLATFORM_HCC__>")
-        endif()
 
         alpaka_compiler_option(HIP_KEEP_FILES "Keep all intermediate files that are generated during internal compilation steps 'CMakeFiles/<targetname>.dir'" OFF)
         if(alpaka_HIP_KEEP_FILES)
