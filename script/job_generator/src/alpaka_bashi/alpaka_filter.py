@@ -8,73 +8,19 @@ from typing import Dict, Callable, IO, List
 import bashi
 from bashi.globals import *  # pylint: disable=wildcard-import,unused-wildcard-import
 from alpaka_bashi.globals import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from alpaka_bashi.versions import get_used_backends, get_allowed_backend_combinations
 
 
-def all_backends_fine(
-    row: bashi.BashiRow,
-    backends: List[ValueName],
-    all_available_backends: List[ValueName],
-) -> bool:
-    """Check if the combination of backends in a row is corresponding to at least one valid
-    combination of backends.
-
-    Args:
-        row (bashi.BashiRow): row with backends
-        backends (List[ValueName]): Backends which needs to be enabled.
-        all_available_backends (List[ValueName]): All available backends. If a backend is not in the
-            backends list, but in this list, it needs to be disabled.
-
-    Returns:
-        bool: True if all enabled backends of the `row` are defined in `backends` and all disabled
-            backends are defined in `all_available_backends`.
-    """
-    for backend in all_available_backends:
-        if backend in row:
-            if backend in backends:
-                if row[backend].version == OFF_VER:
-                    return False
-            else:
-                if row[backend].version != OFF_VER:
-                    return False
-
-    return True
-
-
-def get_valid_compiler_backend_combinations(
-    row: bashi.BashiRow,
-) -> List[CompilerBackendComb]:
-    """Return a list of all possible compiler and backend combinations, which are still possible
-    for the given row.
-
-    Args:
-        row (bashi.BashiRow): parameter-value-tuple
-
-    Returns:
-        List[CompilerBackendComb]: List if possible backends combinations
-    """
-    valid_combs: List[CompilerBackendComb] = []
-    for comb in ALLOWED_BACKEND_COMBINATIONS:
-        host_compiler, device_compiler, backends = comb
-        if row[HOST_COMPILER].name != host_compiler:
-            continue
-        if row[DEVICE_COMPILER].name != device_compiler:
-            continue
-        if all_backends_fine(row, backends, BACKENDS):
-            valid_combs.append(comb)
-
-    return valid_combs
-
-
-def only_cuda_compiler_backends(combinations: List[CompilerBackendComb]) -> bool:
-    """Return True, if there are only CompilerBackendComb in the list, which contains the CUDA
-    compilers and backend."""
+def only_cuda_compiler_backends(combinations: List[bashi.CompilerBackendCombination]) -> bool:
+    """Return True, if there are only bashi.CompilerBackendCombination in the list, which contains
+    the CUDA compilers and backend."""
     for comb in combinations:
         if ALPAKA_ACC_GPU_CUDA_ENABLE not in comb.backends:
             return False
     return True
 
 
-def only_clang_cuda_compiler_backends(combinations: List[CompilerBackendComb]) -> bool:
+def only_clang_cuda_compiler_backends(combinations: List[bashi.CompilerBackendCombination]) -> bool:
     """Return True, if only compiler backend combinations with the Clang-CUDA compiler exist."""
     for comb in combinations:
         host_compiler = comb[0]
@@ -96,7 +42,14 @@ def check_only_valid_backend_combinations_a1(
     Returns:
         bool: True if passed.
     """
-    if len(get_valid_compiler_backend_combinations(row)) == 0:
+    if (
+        len(
+            bashi.get_valid_compiler_backend_combinations(
+                row, get_allowed_backend_combinations(), get_used_backends()
+            )
+        )
+        == 0
+    ):
         alpaka_filter.reason("No valid backend combination available.")
         return False
     return True
@@ -113,7 +66,11 @@ def check_cuda_sdk_host_compiler_a2(row: bashi.BashiRow, alpaka_filter: "AlpakaF
     Returns:
         bool: True if passed.
     """
-    if only_cuda_compiler_backends(get_valid_compiler_backend_combinations(row)):
+    if only_cuda_compiler_backends(
+        bashi.get_valid_compiler_backend_combinations(
+            row, get_allowed_backend_combinations(), get_used_backends()
+        )
+    ):
         if (
             row[HOST_COMPILER].name in (GCC, CLANG)
             and RT_HOST_COMPILER_CUDA_SUPPORT in alpaka_filter.runtime_infos
@@ -255,10 +212,18 @@ def check_existing_clang_cuda_for_cuda_sdk_version_a6(
     Returns:
         bool: True if passed.
     """
-    if only_cuda_compiler_backends(get_valid_compiler_backend_combinations(row)):
+    if only_cuda_compiler_backends(
+        bashi.get_valid_compiler_backend_combinations(
+            row, get_allowed_backend_combinations(), get_used_backends()
+        )
+    ):
         if (
             RT_CLANG_CUDA_MAX_CUDA_SUPPORT in alpaka_filter.runtime_infos
-            and only_clang_cuda_compiler_backends(get_valid_compiler_backend_combinations(row))
+            and only_clang_cuda_compiler_backends(
+                bashi.get_valid_compiler_backend_combinations(
+                    row, get_allowed_backend_combinations(), get_used_backends()
+                )
+            )
             and ALPAKA_ACC_GPU_CUDA_ENABLE in row
             and not alpaka_filter.runtime_infos[RT_CLANG_CUDA_MAX_CUDA_SUPPORT](
                 row[ALPAKA_ACC_GPU_CUDA_ENABLE].version
