@@ -41,6 +41,10 @@ def set_generic_variables(job_body: Dict[str, Any], combination: bashi.Combinati
         "alpaka_ACC_GPU_CUDA_ONLY_MODE": "OFF",
         "alpaka_ACC_GPU_HIP_ONLY_MODE": "OFF",
         "ALPAKA_CI_STDLIB": "libstdc++",
+        # workaround github clone issues: https://github.com/orgs/community/discussions/206581
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "http.https://github.com.version",
+        "GIT_CONFIG_VALUE_0": "HTTP/1.1",
     }
 
     variables["ALPAKA_CI_UBUNTU_VER"] = bashi.ubuntu_version_to_string(combination[UBUNTU].version)
